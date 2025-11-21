@@ -23,13 +23,14 @@ export class SynthEngine {
         // Instruments
 
         // 1. Pad (Ambient background)
+        this.padVol = new Tone.Volume(-12).connect(this.reverb);
         this.pad = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "fatcustom", partials: [0.2, 1, 0, 0.5, 0.1], spread: 40, count: 3 },
             envelope: { attack: 2, decay: 1, sustain: 1, release: 2 }
-        }).connect(this.reverb);
-        this.pad.volume.value = -12;
+        }).connect(this.padVol);
 
         // 2. Bass (Deep, FM)
+        this.bassVol = new Tone.Volume(-6).connect(this.distortion);
         this.bass = new Tone.FMSynth({
             harmonicity: 1,
             modulationIndex: 3.5,
@@ -37,22 +38,21 @@ export class SynthEngine {
             envelope: { attack: 0.01, decay: 0.2, sustain: 0.8, release: 0.5 },
             modulation: { type: "square" },
             modulationEnvelope: { attack: 0.1, decay: 0.2, sustain: 0.3, release: 0.01 }
-        }).connect(this.distortion);
-        this.bass.volume.value = -6;
+        }).connect(this.bassVol);
 
         // 3. Lead (Plucky, Arp)
+        this.leadVol = new Tone.Volume(-10).connect(this.delay);
         this.lead = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "triangle" },
             envelope: { attack: 0.02, decay: 0.1, sustain: 0.1, release: 1 }
-        }).connect(this.delay);
-        this.lead.volume.value = -10;
+        }).connect(this.leadVol);
 
         // 4. Noise (Rhythmic Glitch)
+        this.noiseVol = new Tone.Volume(-15).connect(this.bitCrusher);
         this.noise = new Tone.NoiseSynth({
             noise: { type: "pink" },
             envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
-        }).connect(this.bitCrusher);
-        this.noise.volume.value = -15;
+        }).connect(this.noiseVol);
     }
 
     setEffectWet(effect, value) {

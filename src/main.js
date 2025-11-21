@@ -99,13 +99,113 @@ function generateControls() {
         videoProcessor.params.glitchProb = v;
     });
 
-    // Audio/Mapper Params
-    createSlider('MOTION_THRESH', 0, 1, 0.01, mapper.motionThreshold, (v) => {
+    // --- SONIFICATION CONTROLS ---
+    const sonificationHeader = document.createElement('h2');
+    sonificationHeader.textContent = 'SONIFICATION';
+    sonificationHeader.style.marginTop = '20px';
+    sonificationHeader.style.borderTop = '1px solid var(--primary)';
+    sonificationHeader.style.paddingTop = '10px';
+    controlsContainer.appendChild(sonificationHeader);
+
+    // Sensitivity
+    createSlider('MOTION_SENS', 0, 1, 0.01, mapper.motionThreshold, (v) => {
         mapper.motionThreshold = v;
+    });
+
+    createSlider('BRIGHT_SENS', 0, 1, 0.01, mapper.brightnessThreshold, (v) => {
+        mapper.brightnessThreshold = v;
     });
 
     createSlider('BPM', 60, 200, 1, 120, (v) => {
         Tone.Transport.bpm.value = v;
+    });
+
+    // Scale & Root
+    const theoryGroup = document.createElement('div');
+    theoryGroup.className = 'control-group';
+    theoryGroup.innerHTML = `<h3>THEORY</h3>`;
+
+    // Scale Selector
+    const scaleSelect = document.createElement('select');
+    Object.keys(audioSystem.musicTheory.constructor.SCALES || {
+        major: [], minor: [], dorian: [], lydian: [], phrygian: [], pentatonic: [], chromatic: []
+    }).forEach(scale => { // Fallback if static access fails, but it should be exported constants
+        // Actually SCALES is exported separately, let's access via instance if possible or just hardcode for now since we didn't import SCALES in main.js
+        // Better: import SCALES in main.js or expose via audioSystem
+    });
+    // Let's use a hardcoded list for now to avoid import issues, or better, expose it in AudioSystem
+    ['major', 'minor', 'dorian', 'lydian', 'phrygian', 'pentatonic', 'chromatic'].forEach(scale => {
+        const opt = document.createElement('option');
+        opt.value = scale;
+        opt.textContent = scale.toUpperCase();
+        if (scale === 'minor') opt.selected = true;
+        scaleSelect.appendChild(opt);
+    });
+    scaleSelect.addEventListener('change', (e) => audioSystem.setScale(e.target.value));
+    theoryGroup.appendChild(scaleSelect);
+
+    // Root Selector
+    const rootSelect = document.createElement('select');
+    ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].forEach(note => {
+        const opt = document.createElement('option');
+        opt.value = note;
+        opt.textContent = note;
+        if (note === 'C') opt.selected = true;
+        rootSelect.appendChild(opt);
+    });
+    rootSelect.addEventListener('change', (e) => audioSystem.setRoot(e.target.value));
+    theoryGroup.appendChild(rootSelect);
+    controlsContainer.appendChild(theoryGroup);
+
+
+    // Mixer / Instruments
+    const mixerHeader = document.createElement('h3');
+    mixerHeader.textContent = 'MIXER';
+    controlsContainer.appendChild(mixerHeader);
+
+    const instruments = [
+        { id: 'lead', name: 'LEAD' },
+        { id: 'pad', name: 'PAD' },
+        { id: 'bass', name: 'BASS' },
+        { id: 'noise', name: 'NOISE' }
+    ];
+
+    instruments.forEach(inst => {
+        const group = document.createElement('div');
+        group.className = 'control-group mixer-group';
+        group.style.display = 'flex';
+        group.style.alignItems = 'center';
+        group.style.justifyContent = 'space-between';
+
+        // Mute Toggle
+        const toggle = document.createElement('button');
+        toggle.textContent = inst.name;
+        toggle.className = 'active'; // Default active
+        toggle.style.width = '60px';
+        toggle.style.fontSize = '0.8rem';
+
+        let isActive = true;
+        toggle.addEventListener('click', () => {
+            isActive = !isActive;
+            toggle.classList.toggle('active', isActive);
+            toggle.style.opacity = isActive ? '1' : '0.5';
+            audioSystem.toggleInstrument(inst.id, isActive);
+        });
+
+        // Volume Slider
+        const vol = document.createElement('input');
+        vol.type = 'range';
+        vol.min = -60;
+        vol.max = 0;
+        vol.value = -10; // Default
+        vol.style.width = '100px';
+        vol.addEventListener('input', (e) => {
+            audioSystem.setInstrumentVolume(inst.id, parseFloat(e.target.value));
+        });
+
+        group.appendChild(toggle);
+        group.appendChild(vol);
+        controlsContainer.appendChild(group);
     });
 }
 

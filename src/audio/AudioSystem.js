@@ -27,17 +27,34 @@ export class AudioSystem {
         }
     }
 
+    // Control Methods
+    setInstrumentVolume(instrument, value) {
+        if (this.synths && this.synths[instrument + 'Vol']) {
+            this.synths[instrument + 'Vol'].volume.value = value;
+        }
+    }
+
+    toggleInstrument(instrument, isActive) {
+        if (this.synths && this.synths[instrument + 'Vol']) {
+            this.synths[instrument + 'Vol'].mute = !isActive;
+        }
+    }
+
+    setScale(scaleName) {
+        if (this.musicTheory) {
+            this.musicTheory.scale = scaleName;
+        }
+    }
+
+    setRoot(rootNote) {
+        if (this.musicTheory) {
+            this.musicTheory.root = rootNote;
+        }
+    }
+
     // Method to trigger a note based on abstract parameters
     trigger(instrument, noteIndex, velocity = 1, duration = "8n") {
         if (!this.isReady) return;
-
-        const note = this.musicTheory.quantizeToScale(noteIndex, this.musicTheory.scale);
-        // Convert index to actual frequency/note name if needed, or just use the note name returned
-        // The quantizer returns a note index (0-11)? No, it returns a note index relative to the scale?
-        // Let's check MusicTheory.js... 
-        // It returns the closest interval (0-11). We need to map that to a pitch.
-
-        // Actually, let's refine the trigger logic in the Mapper step. 
-        // For now, let's just expose the synths.
+        // Triggering is handled in Mapper for now
     }
 }

@@ -12,6 +12,7 @@ export class Mapper {
 
         // Thresholds
         this.motionThreshold = 0.15;
+        this.brightnessThreshold = 0.6;
     }
 
     start() {
@@ -59,32 +60,33 @@ export class Mapper {
             if (cell.motion > this.motionThreshold) {
                 // Trigger based on Y position
                 // Top (0) -> High Lead
-                // Mid (1,2) -> Pad / Arp
-                // Bottom (3) -> Bass / Kick
-
                 if (cell.y === 0) {
-                    // Lead
-                    const note = this.audioSystem.musicTheory.getRandomNote(4, 5);
-                    this.audioSystem.synths.lead.triggerAttackRelease(note, "16n", time);
-                } else if (cell.y === 1 || cell.y === 2) {
-                    // Pad / Chord
-                    // Only trigger occasionally or if motion is high
-                    if (Math.random() > 0.5) {
-                        const chord = this.audioSystem.musicTheory.getChord(Math.floor(cell.brightness * 7));
-                        // this.audioSystem.synths.pad.triggerAttackRelease(chord, "8n", time);
-                        // Pad is better sustained, maybe just trigger Arp here
-                        const note = this.audioSystem.musicTheory.getRandomNote(3, 4);
-                        this.audioSystem.synths.pad.triggerAttackRelease(note, "8n", time);
+                    if (!this.audioSystem.synths.leadVol.mute) {
+                        const note = this.audioSystem.musicTheory.getRandomNote(4, 5);
+                        this.audioSystem.synths.lead.triggerAttackRelease(note, "16n", time);
                     }
-                } else if (cell.y === 3) {
-                    // Bass
-                    const note = this.audioSystem.musicTheory.getRandomNote(1, 2);
-                    this.audioSystem.synths.bass.triggerAttackRelease(note, "8n", time);
+                }
+                // Mid (1,2) -> Pad / Arp
+                else if (cell.y === 1 || cell.y === 2) {
+                    if (!this.audioSystem.synths.padVol.mute) {
+                        // Trigger if brightness is high enough or random chance
+                        if (cell.brightness > this.brightnessThreshold || Math.random() > 0.7) {
+                            const note = this.audioSystem.musicTheory.getRandomNote(3, 4);
+                            this.audioSystem.synths.pad.triggerAttackRelease(note, "8n", time);
+                        }
+                    }
+                }
+                // Bottom (3) -> Bass / Kick
+                else if (cell.y === 3) {
+                    if (!this.audioSystem.synths.bassVol.mute) {
+                        const note = this.audioSystem.musicTheory.getRandomNote(1, 2);
+                        this.audioSystem.synths.bass.triggerAttackRelease(note, "8n", time);
+                    }
                 }
             }
 
             // Glitch / Noise Trigger (Random high motion anywhere)
-            if (cell.motion > 0.4) {
+            if (cell.motion > 0.4 && !this.audioSystem.synths.noiseVol.mute) {
                 this.audioSystem.synths.noise.triggerAttackRelease("16n", time);
             }
         });
