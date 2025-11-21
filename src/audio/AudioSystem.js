@@ -5,7 +5,9 @@ export class AudioSystem {
     constructor() {
         this.isReady = false;
         this.musicTheory = new MusicTheory();
+        this.progression = null; // Will be set by Composer
     }
+
 
     init() {
         // Create a Master Limiter to prevent clipping

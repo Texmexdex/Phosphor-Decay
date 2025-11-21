@@ -62,4 +62,49 @@ export class MusicTheory {
         // but for generative ambient, this often works well enough if we stick to the scale
         return [rootNote + "3", scaleNotes[(degree + 2) % scaleNotes.length] + "3", scaleNotes[(degree + 4) % scaleNotes.length] + "3"];
     }
+
+    /**
+     * Convert note name to MIDI number
+     * e.g., "C4" -> 60
+     */
+    noteToMidi(noteName) {
+        const match = noteName.match(/^([A-G]#?)(\d+)$/);
+        if (!match) {
+            console.warn('Invalid note name:', noteName);
+            return 60; // Default to C4
+        }
+
+        const [, note, octave] = match;
+        const noteIndex = this.notes.indexOf(note);
+        return noteIndex + (parseInt(octave) * 12);
+    }
+
+    /**
+     * Convert MIDI number to note name
+     * e.g., 60 -> "C4"
+     */
+    midiToNote(midi) {
+        const octave = Math.floor(midi / 12);
+        const noteIndex = midi % 12;
+        const noteName = this.notes[noteIndex];
+        return noteName + octave;
+    }
+
+    /**
+     * Transpose a note by semitones
+     */
+    transpose(noteName, semitones) {
+        const midi = this.noteToMidi(noteName);
+        return this.midiToNote(midi + semitones);
+    }
+
+    /**
+     * Check if a note is in the current scale
+     */
+    isInScale(noteName) {
+        const scaleNotes = this.getScaleNotes(this.root, this.scale);
+        const noteWithoutOctave = noteName.replace(/\d+$/, '');
+        return scaleNotes.includes(noteWithoutOctave);
+    }
 }
+

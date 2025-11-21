@@ -2,7 +2,8 @@ import { VideoInput } from './video/VideoInput.js';
 import { VideoProcessor } from './video/VideoProcessor.js';
 import { AudioSystem } from './audio/AudioSystem.js';
 import { Analyzer } from './engine/Analyzer.js';
-import { Mapper } from './engine/Mapper.js';
+import { Composer } from './engine/Composer.js';
+
 
 console.log('SYSTEM_BOOT...');
 
@@ -16,7 +17,8 @@ const videoProcessor = new VideoProcessor(videoInput);
 const audioSystem = new AudioSystem();
 const analyzer = new Analyzer(videoProcessor.canvas); // Use the main canvas as source
 
-const mapper = new Mapper(audioSystem, analyzer);
+const composer = new Composer(audioSystem, analyzer);
+
 
 console.log('MODULES_LOADED');
 
@@ -38,7 +40,8 @@ startBtn.addEventListener('click', async () => {
         synth.triggerAttackRelease("C5", "8n");
         console.log('STARTUP_SOUND_TRIGGERED');
 
-        mapper.start();
+        composer.start();
+
 
 
         startBtn.textContent = 'SYSTEM_ACTIVE';
@@ -112,27 +115,74 @@ function generateControls() {
         videoProcessor.params.glitchProb = v;
     });
 
-    // --- SONIFICATION CONTROLS ---
+    // --- SONIFICATION controls ---
     const sonificationHeader = document.createElement('h2');
-    sonificationHeader.textContent = 'SONIFICATION';
+    sonificationHeader.textContent = 'MUSIC COMPOSITION';
     sonificationHeader.style.marginTop = '20px';
     sonificationHeader.style.borderTop = '1px solid var(--primary)';
     sonificationHeader.style.paddingTop = '10px';
     controlsContainer.appendChild(sonificationHeader);
 
-    // Sensitivity
-    createSlider('MOTION_SENS', 0, 1, 0.01, mapper.motionThreshold, (v) => {
-        mapper.motionThreshold = v;
+    // Progression selector
+    const progGroup = document.createElement('div');
+    progGroup.className = 'control-group';
+    progGroup.innerHTML = `<h3>PROGRESSION</h3>`;
+
+    const progSelect = document.createElement('select');
+    [
+        { cat: 'classic_minor', idx: 0, name: 'i-VI-III-VII (Dramatic)' },
+        { cat: 'classic_minor', idx: 1, name: 'i-iv-VII-III (Dark)' },
+        { cat: 'classic_minor', idx: 2, name: 'i-VII-VI-VII (Tension)' },
+        { cat: 'ambient', idx: 0, name: 'Pad Drone' },
+        { cat: 'ambient', idx: 1, name: 'Floating' },
+        { cat: 'ambient', idx: 2, name: 'Evolving' },
+        { cat: 'experimental', idx: 0, name: 'Chromatic Climb' },
+        { cat: 'experimental', idx: 1, name: 'Tritone Switch' },
+    ].forEach((prog, i) => {
+        const opt = document.createElement('option');
+        opt.value = JSON.stringify({ cat: prog.cat, idx: prog.idx });
+        opt.textContent = prog.name;
+        if (i === 0) opt.selected = true;
+        progSelect.appendChild(opt);
+    });
+    progSelect.addEventListener('change', (e) => {
+        const { cat, idx } = JSON.parse(e.target.value);
+        composer.setProgression(cat, idx);
+    });
+    progGroup.appendChild(progSelect);
+    controlsContainer.appendChild(progGroup);
+
+    // Rhythm template selector
+    const rhythmGroup = document.createElement('div');
+    rhythmGroup.className = 'control-group';
+    rhythmGroup.innerHTML = `<h3>RHYTHM</h3>`;
+
+    const rhythmSelect = document.createElement('select');
+    ['ambient', 'house', 'techno', 'breakbeat', 'glitch', 'minimal'].forEach((template, i) => {
+        const opt = document.createElement('option');
+        opt.value = template;
+        opt.textContent = template.toUpperCase();
+        if (i === 0) opt.selected = true;
+        rhythmSelect.appendChild(opt);
+    });
+    rhythmSelect.addEventListener('change', (e) => {
+        composer.setRhythmTemplate(e.target.value);
+    });
+    rhythmGroup.appendChild(rhythmSelect);
+    controlsContainer.appendChild(rhythmGroup);
+
+    // Video influence sliders
+    createSlider('VIDEO→MELODY', 0, 1, 0.01, 0.7, (v) => {
+        composer.setVideoInfluence('melody', v);
     });
 
-    createSlider('BRIGHT_SENS', 0, 1, 0.01, mapper.brightnessThreshold, (v) => {
-        mapper.brightnessThreshold = v;
+    createSlider('VIDEO→HARMONY', 0, 1, 0.01, 0.3, (v) => {
+        composer.setVideoInfluence('harmony', v);
     });
 
     createSlider('BPM', 60, 200, 1, 120, (v) => {
         Tone.Transport.bpm.value = v;
     });
-
     // Scale & Root
     const theoryGroup = document.createElement('div');
     theoryGroup.className = 'control-group';
