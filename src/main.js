@@ -69,6 +69,35 @@ document.getElementById('screen-btn').addEventListener('click', () => {
     overlay.style.display = 'none';
 });
 
+// Fullscreen button
+document.getElementById('fullscreen-btn').addEventListener('click', () => {
+    const container = document.getElementById('canvas-container');
+    if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => {
+            console.error('Fullscreen error:', err);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+});
+
+// Canvas Feedback button (Infinity Mirror)
+let isFeedbackActive = false;
+document.getElementById('canvas-feedback-btn').addEventListener('click', () => {
+    const btn = document.getElementById('canvas-feedback-btn');
+    if (!isFeedbackActive) {
+        videoInput.startCanvasFeedback(videoProcessor.canvas);
+        videoProcessor.start();
+        overlay.style.display = 'none';
+        btn.classList.add('active');
+        isFeedbackActive = true;
+    } else {
+        btn.classList.remove('active');
+        isFeedbackActive = false;
+        // Note: user would need to click webcam/screen to restore original source
+    }
+});
+
 // Generate UI Controls
 function generateControls() {
     const controlsContainer = document.getElementById('controls');

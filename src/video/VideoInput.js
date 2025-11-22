@@ -39,4 +39,20 @@ export class VideoInput {
             console.error("Error accessing screen:", err);
         }
     }
+
+    /**
+     * Start canvas feedback - capture canvas output as video input
+     * Creates infinity mirror effect
+     */
+    startCanvasFeedback(canvas, fps = 30) {
+        try {
+            const stream = canvas.captureStream(fps);
+            this.videoElement.srcObject = stream;
+            this.videoElement.play();
+            this.isPlaying = true;
+            console.log('Canvas feedback started (infinity mirror mode)');
+        } catch (err) {
+            console.error("Error starting canvas feedback:", err);
+        }
+    }
 }

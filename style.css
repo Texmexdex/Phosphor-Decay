@@ -142,3 +142,32 @@ input[type="range"] {
         opacity: 0;
     }
 }
+
+/* Fullscreen and Canvas Feedback Buttons */
+.fullscreen-btn, .canvas-feedback-btn {
+    position: absolute;
+    top: 10px;
+    background: rgba(17, 17, 17, 0.8);
+    border: 1px solid var(--text-color);
+    color: var(--text-color);
+    font-size: 20px;
+    padding: 8px 12px;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+}
+
+.fullscreen-btn { right: 10px; }
+.canvas-feedback-btn { right: 60px; }
+
+.fullscreen-btn:hover, .canvas-feedback-btn:hover {
+    background: var(--text-color);
+    color: var(--bg-color);
+    box-shadow: 0 0 15px var(--text-color);
+}
+
+.canvas-feedback-btn.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 20px var(--accent-color);
+}
