@@ -23,6 +23,8 @@ export class CanvasInteraction {
         this.lastX = e.clientX;
         this.lastY = e.clientY;
         this.activeButton = e.button;
+        
+        console.log('MOUSE_DOWN:', e.button, 'at', e.clientX, e.clientY);
 
         // Prevent default behavior for middle and right clicks to avoid scrolling/context menu
         if (e.button === 1 || e.button === 2) {
@@ -45,6 +47,7 @@ export class CanvasInteraction {
         if (this.activeButton === 0) {
             params.feedbackPanX += deltaX;
             params.feedbackPanY += deltaY;
+            console.log('PAN:', params.feedbackPanX, params.feedbackPanY);
         }
 
         // Middle Click: Zoom
@@ -54,12 +57,14 @@ export class CanvasInteraction {
             params.feedbackZoom += -deltaY * zoomSpeed;
             // Clamp zoom to reasonable limits
             params.feedbackZoom = Math.max(0.1, Math.min(params.feedbackZoom, 3.0));
+            console.log('ZOOM:', params.feedbackZoom);
         }
 
         // Right Click: Rotate
         else if (this.activeButton === 2) {
             const rotationSpeed = 0.5;
             params.feedbackRotation += deltaX * rotationSpeed;
+            console.log('ROTATE:', params.feedbackRotation);
         }
     }
 

@@ -45,6 +45,29 @@ export const LEAD_PRESETS = {
         oscillator: { type: 'amsine', modulationType: 'square', harmonicity: 0.5 },
         envelope: { attack: 0.005, decay: 0.2, sustain: 0.3, release: 0.4 },
         portamento: 0
+    },
+    metallic: {
+        oscillator: {
+            type: 'fmsquare',
+            modulationType: 'square',
+            modulationIndex: 20,
+            harmonicity: 3.5
+        },
+        envelope: { attack: 0.001, decay: 0.4, sustain: 0.1, release: 0.8 }
+    },
+    glass: {
+        oscillator: {
+            type: 'fmsine',
+            modulationType: 'sine',
+            modulationIndex: 15,
+            harmonicity: 5
+        },
+        envelope: { attack: 0.002, decay: 0.6, sustain: 0.05, release: 1.2 }
+    },
+    digital: {
+        oscillator: { type: 'pulse', width: 0.2 },
+        envelope: { attack: 0.001, decay: 0.15, sustain: 0.2, release: 0.3 },
+        portamento: 0
     }
 };
 
@@ -117,6 +140,35 @@ export const BASS_PRESETS = {
             sustain: 0.4,
             release: 0.5
         }
+    },
+    '808': {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.5 },
+        filterEnvelope: {
+            baseFrequency: 80,
+            octaves: 3,
+            attack: 0.001,
+            decay: 0.3,
+            sustain: 0,
+            release: 0.4
+        }
+    },
+    growl: {
+        oscillator: {
+            type: 'fmsawtooth',
+            modulationType: 'square',
+            modulationIndex: 12,
+            harmonicity: 0.25
+        },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.7, release: 0.6 },
+        filterEnvelope: {
+            baseFrequency: 120,
+            octaves: 3.5,
+            attack: 0.01,
+            decay: 0.15,
+            sustain: 0.6,
+            release: 0.4
+        }
     }
 };
 
@@ -154,6 +206,19 @@ export const PAD_PRESETS = {
             harmonicity: 2
         },
         envelope: { attack: 2.2, decay: 0.5, sustain: 0.9, release: 3.5 }
+    },
+    space: {
+        oscillator: {
+            type: 'fmtriangle',
+            modulationType: 'sine',
+            modulationIndex: 8,
+            harmonicity: 1.5
+        },
+        envelope: { attack: 3, decay: 1, sustain: 0.95, release: 4 }
+    },
+    drone: {
+        oscillator: { type: 'fatsquare', spread: 80, count: 6 },
+        envelope: { attack: 4, decay: 2, sustain: 1, release: 5 }
     }
 };
 
@@ -166,7 +231,10 @@ export const LEAD_NAMES = {
     arp: 'Arp Synth',
     soft: 'Soft Lead',
     detuned: 'Detuned',
-    noise: 'Noise Lead'
+    noise: 'Noise Lead',
+    metallic: 'Metallic',
+    glass: 'Glass Bell',
+    digital: 'Digital'
 };
 
 export const BASS_NAMES = {
@@ -175,7 +243,9 @@ export const BASS_NAMES = {
     fm: 'FM Bass',
     pluck: 'Pluck Bass',
     wobble: 'Wobble',
-    reese: 'Reese Bass'
+    reese: 'Reese Bass',
+    808: '808 Bass',
+    growl: 'Growl Bass'
 };
 
 export const PAD_NAMES = {
@@ -183,5 +253,7 @@ export const PAD_NAMES = {
     string: 'String Pad',
     choir: 'Choir Pad',
     dark: 'Dark Pad',
-    shimmer: 'Shimmer Pad'
+    shimmer: 'Shimmer Pad',
+    space: 'Space Pad',
+    drone: 'Drone Pad'
 };

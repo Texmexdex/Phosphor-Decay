@@ -3,6 +3,7 @@ import { VideoProcessor } from './video/VideoProcessor.js';
 import { AudioSystem } from './audio/AudioSystem.js';
 import { Analyzer } from './engine/Analyzer.js';
 import { Composer } from './engine/Composer.js';
+import { VisualSequencer } from './engine/VisualSequencer.js';
 import { CanvasInteraction } from './ui/CanvasInteraction.js';
 import { LEAD_NAMES, BASS_NAMES, PAD_NAMES } from './audio/SynthPresets.js';
 
@@ -17,16 +18,39 @@ let isInitialized = false;
 const videoInput = new VideoInput();
 const videoProcessor = new VideoProcessor(videoInput);
 const audioSystem = new AudioSystem();
-const analyzer = new Analyzer(videoProcessor.canvas); // Use the main canvas as source
+const analyzer = new Analyzer(videoProcessor.canvas, 16, 16); // Increased resolution for better motion detection
 const canvasInteraction = new CanvasInteraction(videoProcessor.canvas, videoProcessor);
 
 const composer = new Composer(audioSystem, analyzer);
+const visualSequencer = new VisualSequencer(audioSystem, analyzer, composer.progression);
+
+// Track which sequencer is active
+let currentSequencer = composer;  // Default to time-based
+let isVisualMode = false;
+
+// Mode switching functions
+function enableVisualMode() {
+    composer.stop();
+    isVisualMode = true;
+    currentSequencer = visualSequencer;
+    console.log('VISUAL-DRIVEN MODE: Fractal patterns drive music');
+}
+
+function enableTimeMode() {
+    composer.start();
+    isVisualMode = false;
+    currentSequencer = composer;
+    console.log('TIME-BASED MODE: Traditional rhythm scheduling');
+}
 
 
 console.log('MODULES_LOADED');
 
 // Link video processor to audio synths for feedback delay sync
 videoProcessor.setAudioSynths(audioSystem.synths);
+
+// Link visual sequencer to video processor
+videoProcessor.setVisualSequencer(visualSequencer);
 
 
 startBtn.addEventListener('click', async () => {
@@ -46,9 +70,11 @@ startBtn.addEventListener('click', async () => {
         synth.triggerAttackRelease("C5", "8n");
         console.log('STARTUP_SOUND_TRIGGERED');
 
-        composer.start();
-
-
+        // Start analog feedback loop (camera pointing at TV effect)
+        videoInput.startCanvasFeedback(videoProcessor.canvas, 30);
+        videoProcessor.start();
+        enableVisualMode();
+        console.log('ANALOG_FEEDBACK_ACTIVE: Self-referential loop initiated');
 
         startBtn.textContent = 'SYSTEM_ACTIVE';
         startBtn.disabled = true;
@@ -61,18 +87,40 @@ startBtn.addEventListener('click', async () => {
 });
 
 // Setup Video Buttons
-document.getElementById('cam-btn').addEventListener('click', () => {
-    console.log('CAM_BTN_CLICKED');
-    videoInput.startWebcam();
-
-    videoProcessor.start();
-    overlay.style.display = 'none';
+document.getElementById('cam-btn').addEventListener('click', async () => {
+    try {
+        await videoInput.startWebcam();
+        videoProcessor.start();
+        overlay.style.display = 'none';
+    } catch (err) {
+        console.error('Webcam failed:', err);
+    }
 });
 
-document.getElementById('screen-btn').addEventListener('click', () => {
-    videoInput.startScreenShare();
-    videoProcessor.start();
-    overlay.style.display = 'none';
+document.getElementById('screen-btn').addEventListener('click', async () => {
+    try {
+        await videoInput.startScreenShare();
+        videoProcessor.start();
+        overlay.style.display = 'none';
+    } catch (err) {
+        console.error('Screen share failed:', err);
+    }
+});
+
+// TIME-BASED button - Toggle composer (traditional rhythm)
+let isTimeBasedActive = false;
+document.getElementById('timebased-btn').addEventListener('click', () => {
+    const btn = document.getElementById('timebased-btn');
+    if (!isTimeBasedActive) {
+        enableTimeMode();
+        btn.classList.add('active');
+        isTimeBasedActive = true;
+    } else {
+        composer.stop();
+        btn.classList.remove('active');
+        isTimeBasedActive = false;
+        console.log('TIME-BASED MODE: Stopped');
+    }
 });
 
 // Fullscreen button
@@ -87,29 +135,127 @@ document.getElementById('fullscreen-btn').addEventListener('click', () => {
     }
 });
 
-// Canvas Feedback button (Infinity Mirror)
-let isFeedbackActive = false;
+// Canvas Feedback button - now just restarts if needed
 document.getElementById('canvas-feedback-btn').addEventListener('click', () => {
-    const btn = document.getElementById('canvas-feedback-btn');
-    if (!isFeedbackActive) {
-        videoInput.startCanvasFeedback(videoProcessor.canvas);
+    videoInput.startCanvasFeedback(videoProcessor.canvas);
+    if (!videoProcessor.isPlaying) {
         videoProcessor.start();
-        overlay.style.display = 'none';
-        btn.classList.add('active');
-        isFeedbackActive = true;
-    } else {
-        btn.classList.remove('active');
-        isFeedbackActive = false;
-        // Note: user would need to click webcam/screen to restore original source
     }
+    overlay.style.display = 'none';
+    console.log('CANVAS_FEEDBACK_RESTARTED');
+});
+
+// UI & Cursor Toggle
+document.getElementById('toggle-ui-btn').addEventListener('click', () => {
+    const header = document.querySelector('header');
+    const leftControls = document.getElementById('left-controls');
+    const rightControls = document.getElementById('right-controls');
+    const body = document.body;
+
+    header.classList.toggle('ui-hidden');
+    leftControls.classList.toggle('ui-hidden');
+    rightControls.classList.toggle('ui-hidden');
+    body.classList.toggle('hide-cursor');
+});
+
+// Keyboard shortcut for UI toggle (U key)
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'u' || e.key === 'U') {
+        const header = document.querySelector('header');
+        const leftControls = document.getElementById('left-controls');
+        const rightControls = document.getElementById('right-controls');
+        const body = document.body;
+
+        header.classList.toggle('ui-hidden');
+        leftControls.classList.toggle('ui-hidden');
+        rightControls.classList.toggle('ui-hidden');
+        body.classList.toggle('hide-cursor');
+    }
+});
+
+// Drawing System Controls
+let drawMode = false;
+let recMode = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const drawBtn = document.getElementById('draw-btn');
+        const recBtn = document.getElementById('rec-btn');
+        const playBtn = document.getElementById('play-btn');
+        const clearDrawBtn = document.getElementById('clear-draw-btn');
+
+        if (drawBtn) {
+            drawBtn.addEventListener('click', () => {
+                drawMode = !drawMode;
+                drawBtn.classList.toggle('active', drawMode);
+                console.log('DRAW_MODE:', drawMode);
+            });
+        }
+
+        if (recBtn) {
+            recBtn.addEventListener('click', () => {
+                recMode = !recMode;
+                recBtn.classList.toggle('active', recMode);
+                if (recMode) {
+                    videoProcessor.drawingSystem.startRecording();
+                } else {
+                    videoProcessor.drawingSystem.stopRecording();
+                }
+            });
+        }
+
+        if (playBtn) {
+            playBtn.addEventListener('click', () => {
+                const isPlaying = videoProcessor.drawingSystem.isPlaying;
+                if (isPlaying) {
+                    videoProcessor.drawingSystem.stopPlayback();
+                    playBtn.classList.remove('active');
+                } else {
+                    videoProcessor.drawingSystem.startPlayback();
+                    playBtn.classList.add('active');
+                }
+            });
+        }
+
+        if (clearDrawBtn) {
+            clearDrawBtn.addEventListener('click', () => {
+                videoProcessor.drawingSystem.clearRecordings();
+                playBtn.classList.remove('active');
+            });
+        }
+    }, 100);
+});
+
+// Drawing on canvas
+videoProcessor.canvas.addEventListener('mousedown', (e) => {
+    if (!drawMode) return;
+    const rect = videoProcessor.canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (videoProcessor.canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (videoProcessor.canvas.height / rect.height);
+    videoProcessor.drawingSystem.startDrawing(x, y);
+});
+
+videoProcessor.canvas.addEventListener('mousemove', (e) => {
+    if (!drawMode || !videoProcessor.drawingSystem.isDrawing) return;
+    const rect = videoProcessor.canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (videoProcessor.canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (videoProcessor.canvas.height / rect.height);
+    videoProcessor.drawingSystem.continueDrawing(x, y);
+});
+
+videoProcessor.canvas.addEventListener('mouseup', () => {
+    if (!drawMode) return;
+    videoProcessor.drawingSystem.endDrawing();
 });
 
 // Generate UI Controls
 function generateControls() {
-    const controlsContainer = document.getElementById('controls');
+    const leftContainer = document.getElementById('left-controls');
+    const rightContainer = document.getElementById('right-controls');
 
     // Helper to create slider
-    const createSlider = (label, min, max, step, value, onChange) => {
+    const createSlider = (label, min, max, step, value, onChange, target = 'left') => {
+        const container = target === 'left' ? leftContainer : rightContainer;
         const group = document.createElement('div');
         group.className = 'control-group';
         group.innerHTML = `<h3>${label}</h3><label>${value}</label>`;
@@ -130,29 +276,183 @@ function generateControls() {
         });
 
         group.appendChild(slider);
-        controlsContainer.appendChild(group);
+        container.appendChild(group);
     };
 
-    // Video Params
-    createSlider('FEEDBACK', 0, 0.99, 0.01, videoProcessor.params.feedback, (v) => {
-        videoProcessor.params.feedback = v;
-        videoProcessor.syncAudioWithVideoFeedback(); // Sync audio delay with video feedback
+    // ===== LEFT SIDEBAR: VIDEO & SHAPES =====
+
+    // Drawing Controls
+    const drawingHeader = document.createElement('h3');
+    drawingHeader.textContent = 'DRAWING';
+    leftContainer.appendChild(drawingHeader);
+
+    const drawingControls = document.createElement('div');
+    drawingControls.style.display = 'flex';
+    drawingControls.style.gap = '4px';
+    drawingControls.style.marginBottom = '10px';
+
+    const drawBtn = document.createElement('button');
+    drawBtn.textContent = 'DRAW';
+    drawBtn.id = 'draw-btn';
+    drawBtn.style.flex = '1';
+
+    const recBtn = document.createElement('button');
+    recBtn.textContent = 'REC';
+    recBtn.id = 'rec-btn';
+    recBtn.style.flex = '1';
+
+    const playBtn = document.createElement('button');
+    playBtn.textContent = 'PLAY';
+    playBtn.id = 'play-btn';
+    playBtn.style.flex = '1';
+
+    const clearDrawBtn = document.createElement('button');
+    clearDrawBtn.textContent = 'CLR';
+    clearDrawBtn.id = 'clear-draw-btn';
+    clearDrawBtn.style.flex = '0.7';
+
+    drawingControls.appendChild(drawBtn);
+    drawingControls.appendChild(recBtn);
+    drawingControls.appendChild(playBtn);
+    drawingControls.appendChild(clearDrawBtn);
+    leftContainer.appendChild(drawingControls);
+
+    createSlider('DRAW WIDTH', 1, 10, 0.5, 3, (v) => {
+        if (videoProcessor.drawingSystem) {
+            videoProcessor.drawingSystem.lineWidth = v;
+        }
     });
+
+    createSlider('DRAW OPACITY', 0, 1, 0.01, 1, (v) => {
+        if (videoProcessor.drawingSystem) {
+            videoProcessor.drawingSystem.opacity = v;
+        }
+    });
+
+    // Shape Controls
+    const shapeContainer = document.createElement('div');
+    shapeContainer.style.display = 'flex';
+    shapeContainer.style.gap = '10px';
+    shapeContainer.style.marginBottom = '20px';
+
+    // Shape Selector
+    const shapeSelect = document.createElement('select');
+    shapeSelect.style.flex = '1';
+    const shapes = [
+        { value: 'random', text: 'Random' },
+        { value: 'circle', text: 'Circle' },
+        { value: 'square', text: 'Square' },
+        { value: 'triangle', text: 'Triangle' },
+        { value: 'pentagon', text: 'Pentagon' },
+        { value: 'hexagon', text: 'Hexagon' },
+        { value: 'octagon', text: 'Octagon' },
+        { value: 'star5', text: 'Star 5' },
+        { value: 'star6', text: 'Star 6' },
+        { value: 'diamond', text: 'Diamond' },
+        { value: 'heart', text: 'Heart' },
+        { value: 'cross', text: 'Cross' },
+        { value: 'plus', text: 'Plus' },
+        { value: 'tetrahedron', text: 'Tetrahedron' },
+        { value: 'cube', text: '3D Cube' },
+        { value: 'pyramid', text: '3D Pyramid' },
+        { value: 'octahedron', text: '3D Octahedron' },
+        { value: 'icosahedron', text: 'Icosahedron' },
+        { value: 'dodecahedron', text: 'Dodecahedron' },
+        { value: 'merkaba', text: 'Merkaba' },
+        { value: 'metatron', text: 'Metatron' },
+        { value: 'torus', text: 'Torus' },
+        { value: 'spiral', text: 'Spiral' }
+    ];
+    shapes.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.value;
+        opt.textContent = s.text;
+        shapeSelect.appendChild(opt);
+    });
+
+    const addShapeBtn = document.createElement('button');
+    addShapeBtn.textContent = 'ADD';
+    addShapeBtn.style.flex = '0.5';
+    addShapeBtn.addEventListener('click', () => {
+        if (videoProcessor.shapeGenerator) {
+            videoProcessor.shapeGenerator.addShape(shapeSelect.value);
+        } else {
+            console.error('ShapeGenerator not found on videoProcessor');
+        }
+    });
+
+    const clearShapesBtn = document.createElement('button');
+    clearShapesBtn.textContent = 'CLR';
+    clearShapesBtn.style.flex = '0.7';
+    clearShapesBtn.addEventListener('click', () => {
+        if (videoProcessor.shapeGenerator) {
+            videoProcessor.shapeGenerator.clearShapes();
+        }
+    });
+
+    shapeContainer.appendChild(shapeSelect);
+    shapeContainer.appendChild(addShapeBtn);
+    shapeContainer.appendChild(clearShapesBtn);
+    leftContainer.appendChild(shapeContainer);
+
+    // Shape Size and Line Width
+    createSlider('SHAPE SIZE', 0.05, 0.4, 0.01, 0.15, (v) => {
+        if (videoProcessor.shapeGenerator) {
+            videoProcessor.shapeGenerator.shapeSize = v;
+        }
+    });
+
+    createSlider('SHAPE LINE', 1, 10, 0.5, 3, (v) => {
+        if (videoProcessor.shapeGenerator) {
+            videoProcessor.shapeGenerator.lineWidth = v;
+        }
+    });
+
+    // Shape Animation Controls
+    createSlider('SHAPE ROTATION', -0.1, 0.1, 0.001, 0, (v) => {
+        if (videoProcessor.shapeGenerator) {
+            videoProcessor.shapeGenerator.rotationSpeed = v;
+        }
+    });
+
+    createSlider('SHAPE PULSE', 0, 0.05, 0.001, 0, (v) => {
+        if (videoProcessor.shapeGenerator) {
+            videoProcessor.shapeGenerator.pulseSpeed = v;
+        }
+    });
+
+    createSlider('SHAPE COLOR', 0, 5, 0.1, 0, (v) => {
+        if (videoProcessor.shapeGenerator) {
+            videoProcessor.shapeGenerator.colorSpeed = v;
+        }
+    });
+
+    // Video Params
+    // Opacity removed as per user request for better quality
+    // createSlider('VIDEO_OPACITY', 0, 1, 0.01, videoProcessor.params.videoOpacity, (v) => {
+    //     videoProcessor.params.videoOpacity = v;
+    // });
+
+    createSlider('FPS', 1, 120, 1, videoProcessor.params.targetFPS, (v) => {
+        videoProcessor.params.targetFPS = v;
+    });
+
+
 
     createSlider('FEEDBACK_ZOOM', 0.5, 1.5, 0.001, videoProcessor.params.feedbackZoom, (v) => {
         videoProcessor.params.feedbackZoom = v;
     });
 
-    createSlider('FEEDBACK_ROTATION', -10, 10, 0.1, videoProcessor.params.feedbackRotation, (v) => {
-        videoProcessor.params.feedbackRotation = v;
+    createSlider('ROTATION SPEED', -2, 2, 0.01, 0, (v) => {
+        videoProcessor.params.feedbackRotationVelocity = v;
     });
 
-    createSlider('FEEDBACK_PAN_X', -50, 50, 1, videoProcessor.params.feedbackPanX, (v) => {
-        videoProcessor.params.feedbackPanX = v;
+    createSlider('PAN SPEED X', -10, 10, 0.1, 0, (v) => {
+        videoProcessor.params.feedbackPanVelocityX = v;
     });
 
-    createSlider('FEEDBACK_PAN_Y', -50, 50, 1, videoProcessor.params.feedbackPanY, (v) => {
-        videoProcessor.params.feedbackPanY = v;
+    createSlider('PAN SPEED Y', -10, 10, 0.1, 0, (v) => {
+        videoProcessor.params.feedbackPanVelocityY = v;
     });
 
     createSlider('RGB_SHIFT', 0, 50, 1, videoProcessor.params.rgbShift, (v) => {
@@ -163,18 +463,50 @@ function generateControls() {
         videoProcessor.params.glitchProb = v;
     });
 
+    // Visual Effects
+    createSlider('INVERT', 0, 1, 0.01, 0, (v) => {
+        videoProcessor.params.invert = v;
+    });
 
-    // --- SONIFICATION controls ---
-    const sonificationHeader = document.createElement('h2');
-    sonificationHeader.textContent = 'MUSIC COMPOSITION';
-    sonificationHeader.style.marginTop = '20px';
-    sonificationHeader.style.borderTop = '1px solid var(--primary)';
-    sonificationHeader.style.paddingTop = '10px';
-    controlsContainer.appendChild(sonificationHeader);
+    createSlider('CONTRAST', 0.5, 2, 0.01, 1, (v) => {
+        videoProcessor.params.contrast = v;
+    });
+
+    createSlider('BRIGHTNESS', 0.5, 2, 0.01, 1, (v) => {
+        videoProcessor.params.brightness = v;
+    });
+
+    createSlider('HUE SHIFT SPEED', 0, 5, 0.1, 0, (v) => {
+        videoProcessor.params.hueShiftSpeed = v;
+    });
+
+    createSlider('PIXELATE', 1, 20, 1, 1, (v) => {
+        videoProcessor.params.pixelate = v;
+    });
+
+    createSlider('KALEIDOSCOPE', 0, 8, 1, 0, (v) => {
+        videoProcessor.params.kaleidoscope = v;
+    });
+
+    createSlider('COLOR CHASE', 0, 1, 0.01, 0, (v) => {
+        videoProcessor.params.colorChase = v;
+    });
+
+    createSlider('CHASE SPEED', 0.1, 5, 0.1, 1, (v) => {
+        videoProcessor.params.colorChaseSpeed = v;
+    });
+
+    // ===== RIGHT SIDEBAR: AUDIO & COMPOSITION =====
+
+    // Sonification controls header (already in HTML but add separator)
+    const audioSeparator = document.createElement('div');
+    audioSeparator.style.borderTop = '1px solid var(--text-color)';
+    audioSeparator.style.marginTop = '15px';
+    audioSeparator.style.marginBottom = '15px';
+    rightContainer.appendChild(audioSeparator);
 
     // Progression selector
     const progGroup = document.createElement('div');
-    progGroup.className = 'control-group';
     progGroup.innerHTML = `<h3>PROGRESSION</h3>`;
 
     const progSelect = document.createElement('select');
@@ -268,7 +600,7 @@ function generateControls() {
         composer.setProgression(cat, idx);
     });
     progGroup.appendChild(progSelect);
-    controlsContainer.appendChild(progGroup);
+    rightContainer.appendChild(progGroup);
 
     // Rhythm template selector
     const rhythmGroup = document.createElement('div');
@@ -301,20 +633,116 @@ function generateControls() {
         composer.setRhythmTemplate(e.target.value);
     });
     rhythmGroup.appendChild(rhythmSelect);
-    controlsContainer.appendChild(rhythmGroup);
+    rightContainer.appendChild(rhythmGroup);
 
     // Video influence sliders
-    createSlider('VIDEO→MELODY', 0, 1, 0.01, 0.7, (v) => {
-        composer.setVideoInfluence('melody', v);
-    });
+    // Visual Reactivity
+    const reactHeader = document.createElement('h3');
+    reactHeader.textContent = 'VISUAL REACT';
+    reactHeader.style.marginTop = '10px';
+    rightContainer.appendChild(reactHeader);
 
-    createSlider('VIDEO→HARMONY', 0, 1, 0.01, 0.3, (v) => {
-        composer.setVideoInfluence('harmony', v);
-    });
+    createSlider('LEAD REACT', 0, 1, 0.01, 0.3, (v) => {
+        visualSequencer.setSensitivity('lead', v);
+    }, 'right');
+
+    createSlider('BASS REACT', 0, 1, 0.01, 0.3, (v) => {
+        visualSequencer.setSensitivity('bass', v);
+    }, 'right');
+
+    createSlider('PAD REACT', 0, 1, 0.01, 0.4, (v) => {
+        visualSequencer.setSensitivity('pad', v);
+    }, 'right');
 
     createSlider('BPM', 60, 200, 1, 120, (v) => {
         Tone.Transport.bpm.value = v;
+    }, 'right');
+
+    // Audio Effects
+    createSlider('REVERB MIX', 0, 1, 0.01, 0.3, (v) => {
+        if (audioSystem.synths && audioSystem.synths.reverb) {
+            audioSystem.synths.reverb.wet.value = v;
+        }
+    }, 'right');
+
+    createSlider('DELAY MIX', 0, 1, 0.01, 0.3, (v) => {
+        if (audioSystem.synths && audioSystem.synths.delay) {
+            audioSystem.synths.delay.wet.value = v;
+        }
+    }, 'right');
+
+    createSlider('DISTORTION', 0, 1, 0.01, 0, (v) => {
+        if (audioSystem.synths && audioSystem.synths.distortion) {
+            audioSystem.synths.distortion.wet.value = v;
+        }
+    }, 'right');
+
+    createSlider('BITCRUSH', 0, 1, 0.01, 0, (v) => {
+        if (audioSystem.synths && audioSystem.synths.bitCrusher) {
+            audioSystem.synths.bitCrusher.wet.value = v;
+        }
+    }, 'right');
+
+    // Timbre Controls
+    const timbreHeader = document.createElement('h3');
+    timbreHeader.textContent = 'TIMBRE';
+    timbreHeader.style.marginTop = '15px';
+    rightContainer.appendChild(timbreHeader);
+
+    createSlider('FILTER CUTOFF', 100, 20000, 100, 20000, (v) => {
+        audioSystem.setFilterCutoff(v);
+    }, 'right');
+
+    createSlider('FILTER RES', 0.1, 20, 0.1, 1, (v) => {
+        audioSystem.setFilterResonance(v);
+    }, 'right');
+
+    // Filter Type Selector
+    const filterGroup = document.createElement('div');
+    filterGroup.className = 'control-group';
+    filterGroup.innerHTML = `<h3>FILTER TYPE</h3>`;
+    const filterSelect = document.createElement('select');
+    filterSelect.style.width = '100%';
+    ['lowpass', 'highpass', 'bandpass', 'notch'].forEach(type => {
+        const opt = document.createElement('option');
+        opt.value = type;
+        opt.textContent = type.toUpperCase();
+        if (type === 'lowpass') opt.selected = true;
+        filterSelect.appendChild(opt);
     });
+    filterSelect.addEventListener('change', (e) => audioSystem.setFilterType(e.target.value));
+    filterGroup.appendChild(filterSelect);
+    rightContainer.appendChild(filterGroup);
+
+    // Envelope Controls
+    const envelopeHeader = document.createElement('h3');
+    envelopeHeader.textContent = 'ENVELOPES';
+    envelopeHeader.style.marginTop = '15px';
+    rightContainer.appendChild(envelopeHeader);
+
+    createSlider('LEAD ATTACK', 0.001, 1, 0.01, 0.01, (v) => {
+        audioSystem.setLeadAttack(v);
+    }, 'right');
+
+    createSlider('LEAD RELEASE', 0.01, 3, 0.01, 0.5, (v) => {
+        audioSystem.setLeadRelease(v);
+    }, 'right');
+
+    createSlider('BASS ATTACK', 0.001, 0.5, 0.01, 0.01, (v) => {
+        audioSystem.setBassAttack(v);
+    }, 'right');
+
+    createSlider('BASS RELEASE', 0.01, 2, 0.01, 0.3, (v) => {
+        audioSystem.setBassRelease(v);
+    }, 'right');
+
+    createSlider('PAD ATTACK', 0.01, 3, 0.01, 0.5, (v) => {
+        audioSystem.setPadAttack(v);
+    }, 'right');
+
+    createSlider('PAD RELEASE', 0.1, 5, 0.1, 2, (v) => {
+        audioSystem.setPadRelease(v);
+    }, 'right');
     // Scale & Root
     const theoryGroup = document.createElement('div');
     theoryGroup.className = 'control-group';
@@ -350,13 +778,26 @@ function generateControls() {
     });
     rootSelect.addEventListener('change', (e) => audioSystem.setRoot(e.target.value));
     theoryGroup.appendChild(rootSelect);
-    controlsContainer.appendChild(theoryGroup);
+    rightContainer.appendChild(theoryGroup);
+
+    // Octave Shifts
+    createSlider('LEAD OCTAVE', -4, 4, 1, 0, (v) => {
+        audioSystem.setLeadOctave(v);
+    }, 'right');
+
+    createSlider('BASS OCTAVE', -4, 4, 1, 0, (v) => {
+        audioSystem.setBassOctave(v);
+    }, 'right');
+
+    createSlider('PAD OCTAVE', -4, 4, 1, 0, (v) => {
+        audioSystem.setPadOctave(v);
+    }, 'right');
 
 
     // Mixer / Instruments
     const mixerHeader = document.createElement('h3');
     mixerHeader.textContent = 'MIXER';
-    controlsContainer.appendChild(mixerHeader);
+    rightContainer.appendChild(mixerHeader);
 
     const instruments = [
         { id: 'lead', name: 'LEAD' },
@@ -432,7 +873,7 @@ function generateControls() {
         }
 
         group.appendChild(vol);
-        controlsContainer.appendChild(group);
+        rightContainer.appendChild(group);
     });
 }
 

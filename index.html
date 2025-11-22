@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Glitch Core Video Synth</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Tone.js from CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link rel="icon" href="data:,">
 </head>
 
 <body>
@@ -31,32 +30,56 @@
 
         <header>
             <h1>VIDEO_SYNTH_V1</h1>
-            <button id="start-btn">INITIALIZE_SYSTEM</button>
+            <div class="header-controls">
+                <button id="start-btn">INITIALIZE_SYSTEM</button>
+                <button id="toggle-ui-btn" title="Hide UI & Cursor">👁</button>
+            </div>
         </header>
 
         <main>
-            <div class="canvas-container" id="canvas-container">
-                <canvas id="main-canvas"></canvas>
-                <div class="overlay">NO_SIGNAL</div>
-                <button class="fullscreen-btn" id="fullscreen-btn">⛶</button>
-                <button class="canvas-feedback-btn" id="canvas-feedback-btn" title="Canvas Feedback">∞</button>
-            </div>
-
-            <div class="controls" id="controls">
-                <!-- Controls will be injected here -->
+            <!-- Left Sidebar: Video & Shape Controls -->
+            <div class="controls left-controls" id="left-controls">
+                <h2>VIDEO/SHAPES</h2>
                 <div class="control-group">
                     <h3>VIDEO_INPUT</h3>
                     <button id="cam-btn">WEBCAM</button>
                     <button id="screen-btn">SCREEN</button>
                 </div>
+                <!-- Dynamic controls will be injected here -->
+            </div>
+
+            <!-- Center: Canvas -->
+            <div class="canvas-container" id="canvas-container">
+                <canvas id="main-canvas"></canvas>
+                <div class="overlay">NO_SIGNAL</div>
+                <button class="fullscreen-btn" id="fullscreen-btn">⛶</button>
+                <button class="canvas-feedback-btn active" id="canvas-feedback-btn"
+                    title="Restart Feedback Loop">∞</button>
+                <button class="timebased-btn" id="timebased-btn" title="Time-Based Composer">♩</button>
+            </div>
+
+            <!-- Right Sidebar: Audio Controls -->
+            <div class="controls right-controls" id="right-controls">
+                <h2>AUDIO</h2>
                 <div class="control-group">
                     <h3>AUDIO_ENGINE</h3>
                     <label>VOLUME <input type="range" id="master-vol" min="-60" max="0" value="-10"></label>
                 </div>
+                <!-- Dynamic audio controls will be injected here -->
             </div>
         </main>
     </div>
-    <script type="module" src="src/main.js?v=4"></script>
+
+    <!-- Tone.js from CDN -->
+    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+    <script>
+        if (window.Tone) {
+            console.log('Tone.js loaded successfully');
+        } else {
+            console.error('Tone.js failed to load');
+        }
+    </script>
+    <script type="module" src="src/main.js?v=5"></script>
 </body>
 
 </html>
