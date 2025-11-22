@@ -3,6 +3,7 @@ import { VideoProcessor } from './video/VideoProcessor.js';
 import { AudioSystem } from './audio/AudioSystem.js';
 import { Analyzer } from './engine/Analyzer.js';
 import { Composer } from './engine/Composer.js';
+import { CanvasInteraction } from './ui/CanvasInteraction.js';
 import { LEAD_NAMES, BASS_NAMES, PAD_NAMES } from './audio/SynthPresets.js';
 
 
@@ -17,6 +18,7 @@ const videoInput = new VideoInput();
 const videoProcessor = new VideoProcessor(videoInput);
 const audioSystem = new AudioSystem();
 const analyzer = new Analyzer(videoProcessor.canvas); // Use the main canvas as source
+const canvasInteraction = new CanvasInteraction(videoProcessor.canvas, videoProcessor);
 
 const composer = new Composer(audioSystem, analyzer);
 
@@ -137,8 +139,20 @@ function generateControls() {
         videoProcessor.syncAudioWithVideoFeedback(); // Sync audio delay with video feedback
     });
 
-    createSlider('FEEDBACK_ZOOM', 1.0, 1.2, 0.001, videoProcessor.params.feedbackZoom, (v) => {
+    createSlider('FEEDBACK_ZOOM', 0.5, 1.5, 0.001, videoProcessor.params.feedbackZoom, (v) => {
         videoProcessor.params.feedbackZoom = v;
+    });
+
+    createSlider('FEEDBACK_ROTATION', -10, 10, 0.1, videoProcessor.params.feedbackRotation, (v) => {
+        videoProcessor.params.feedbackRotation = v;
+    });
+
+    createSlider('FEEDBACK_PAN_X', -50, 50, 1, videoProcessor.params.feedbackPanX, (v) => {
+        videoProcessor.params.feedbackPanX = v;
+    });
+
+    createSlider('FEEDBACK_PAN_Y', -50, 50, 1, videoProcessor.params.feedbackPanY, (v) => {
+        videoProcessor.params.feedbackPanY = v;
     });
 
     createSlider('RGB_SHIFT', 0, 50, 1, videoProcessor.params.rgbShift, (v) => {

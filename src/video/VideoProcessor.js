@@ -14,6 +14,9 @@ export class VideoProcessor {
         this.params = {
             feedback: 0.92, // 0 to 1
             feedbackZoom: 1.01, // Scale factor for feedback
+            feedbackRotation: 0, // Degrees
+            feedbackPanX: 0, // Pixels
+            feedbackPanY: 0, // Pixels
             rgbShift: 0, // Pixel offset
             glitchProb: 0.0, // Probability of glitch trigger
             brightnessThreshold: 100,
@@ -109,9 +112,15 @@ export class VideoProcessor {
             this.ctx.save();
             this.ctx.globalAlpha = this.params.feedback;
 
-            // Zoom/Rotate feedback
+            // Zoom/Rotate/Pan feedback
             const zoom = this.params.feedbackZoom;
+            const rot = this.params.feedbackRotation * (Math.PI / 180);
+            const panX = this.params.feedbackPanX;
+            const panY = this.params.feedbackPanY;
+
             this.ctx.translate(width / 2, height / 2);
+            this.ctx.translate(panX, panY);
+            this.ctx.rotate(rot);
             this.ctx.scale(zoom, zoom);
             this.ctx.translate(-width / 2, -height / 2);
 
